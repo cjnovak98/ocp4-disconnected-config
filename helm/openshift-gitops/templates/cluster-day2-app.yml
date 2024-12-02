@@ -12,7 +12,7 @@ spec:
       valueFiles:
       - values.yaml
     path: ./helm/openshift-gitops-day2
-    repoURL: 
+    repoURL: {{ .Values.gitRepoTemplate.url }}
     targetRevision: HEAD
   syncPolicy:
     automated: {}
