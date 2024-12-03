@@ -62,12 +62,12 @@ The default [values.yaml](values.yaml) is designed to be give you the basic layo
 
 Relevant templates:
 
- - [nmstate-instance.yaml](templates/nmstate-instance.yml)
- - [nmstate-namespace.yaml](templates/nmstate-namespace.yaml)
- - [nmstate-operator.yaml](templates/nmstate-operator.yaml)
- - [nmstate-operatorgroup.yaml](templates/nmstate-operatorgroup.yaml)
- - [nmstate-nncp-bond.yaml](templates/nmstate-nncp-bond.yaml)
- - [nmstate-nncp-nodes.yaml](templates/nmstate-nncp-nodes.yaml)
+ - [nmstate-namespace.yaml](templates/0-nmstate-namespace.yaml)
+ - [nmstate-operatorgroup.yaml](templates/2-nmstate-operatorgroup.yaml)
+ - [nmstate-operator.yaml](templates/3-nmstate-operator.yaml)
+ - [nmstate-instance.yaml](templates/4-nmstate-instance.yaml)
+ - [nmstate-nncp-bond.yaml](templates/5-nmstate-nncp-bond.yaml)
+ - [nmstate-nncp-nodes.yaml](templates/5-nmstate-nncp-nodes.yaml)
 
 The nmstate operator is what brings in the NodeNetworkConfigurationPolicy CRD's , allowing us to further tweak the network setup of the cluster.
 
@@ -75,24 +75,21 @@ The nmstate operator is what brings in the NodeNetworkConfigurationPolicy CRD's 
 
 Relevant templates:
 
- - [chrony-configuration.yaml](templates/chrony-configuration.yaml)
+ - [chrony-configuration.yaml](templates/6-chrony-configuration.yaml)
 
 ### LDAP
 
 Relevant templates:
 
- - [ldap-accounts](templates/ldap-accounts.yaml)
- - [ldap-bind-secret.yaml](templates/ldap-bind-secret.yaml)
- - [ldap-oauth-provider.yaml](templates/ldap-oauth-provider.yaml)
+ - [ldap-accounts,secret,and oauth provider](templates/5-ldap-config.yaml)
 
 ### Storage
 
 Relevant templates:
 
- - [trident-sc.yaml](templates/trident-sc.yaml)
- - [trident-machineconfig-master.yaml](templates/trident-machineconfig-master.yaml)
- - [trident-machineconfig-worker.yaml](templates/trident-machineconfig-worker.yaml)
- - [trident-nad.yaml](templates/trident-nad.yaml)
+ - [trident-sc.yaml](templates/5-trident-sc.yaml)
+ - NOTE Will trigger a reboot of the cluster: [trident-machineconfig-master.yaml](templates/6-trident-machineconfig-master.yaml)
+ - NOTE Will trigger a reboot of the cluster: [trident-machineconfig-worker.yaml](templates/6-trident-machineconfig-worker.yaml)
 
 Most Kubernetes distributions come with the packages and utilities to mount NFS backends installed by default, including Red Hat OpenShift.
 
@@ -109,12 +106,10 @@ os-n overview trident.html#nfs](https://docs.netapp.com/us-en/netapp-solutions/c
 
 Relevant templates:
 
- - [proxy-custom-ca-cm.yaml](templates/proxy-custom-ca-cm.yaml)
- - [proxy.yaml](templates/proxy.yaml)
+ - [proxy-custom-ca-cm.yaml](templates/5-proxy-custom-ca-config.yaml)
 
 #### Ingress
 
 Relevant templates:
 
- - [ingress-certs-secret.yaml](templates/ingress-certs-secret.yaml)
- - [ingress-controller.yaml](templates/ingress-controller.yaml)
+ - [ingress-config.yaml](templates/5-ingress-config.yaml)
