@@ -1,0 +1,82 @@
+#!/usr/bin/ansible-playbook -K
+---
+
+- name: NFS Server Playbook
+  hosts: localhost
+  become: true
+  gather_facts: false
+  
+  vars:
+    nfs_dir: /nfs/share
+    nfs_permissions: "0777"
+    nfs_client_ip: 192.168.0.0/24 
+    nfs_options: rw
+  
+  tasks:
+  
+          - name: Print Settings
+            ansible.builtin.debug:
+                    msg: 
+                      - "NFS Shared Direcotry: {{ nfs_dir }}"
+                      - "    Permissions: {{ nfs_permissions }}"
+                      - "Client IP: {{ nfs_client_ip }}"
+                      - "    Share Options: {{ nfs_options }}"
+  
+          - name: Confirm nfs options
+            ansible.builtin.pause:
+                    prompt: "Please confifrm the settings above (yes/no)"
+            register: user_confirmation
+  
+          - name: test
+            ansible.builtin.debug:
+                    msg: "continuing"
+            when: user_confirmation.user_input | bool
+  
+          - name: Ensure nfs packages installed
+            when: user_confirmation | bool
+            ansible.builtin.dnf:
+                    name:
+                            - nfs-utils
+                            - nfs4-acl-tools
+                    state: present
+  
+          - name: Ensure share directory exists
+            when: user_confirmation | bool
+            ansible.builtin.file:
+                    path: {{ nfs_dir }}
+                    state: directory
+                    mode: {{ nfs_permissions }}
+                    owner: root
+                    group: root
+  
+          - name: Ensure export is created
+            when: user_confirmation | bool
+            notify: Restart the nfs service
+            ansible.builtin.lininfile:
+                    path: /etc/exports
+                    state: present
+                    line: "{{ nfs_dir }} {{ nfs_client_ip }} {{ nfs_options }}"
+  
+          - name: Export the share
+            when: user-confirmation | bool
+            ansible.builtin.command: "exportfs -rav"
+  
+          - name: Ensure firewall enabled
+            when: user_confirmation | bool
+            ansible.posix.firewalld:
+                    service: {{ item }}
+                    state: enabled
+                    permanent: true
+                    immediate: true
+            with_items:
+                    - nfs
+                    - rpc-bind
+                    - mountd
+  
+  handlers:
+  
+          - name: Restart the nfs service
+            ansible.builtin.service:
+                    name: nfs-server
+                    state: restarted
+                    enabled: true
