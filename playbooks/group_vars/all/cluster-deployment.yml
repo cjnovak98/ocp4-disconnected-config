@@ -6,7 +6,7 @@ common_git_repos:
 common_openshift_cluster_install_dir:  "{{ common_install_dir }}/install"
 common_openshift_dir: /pods/content
 common_connected_cluster: false
-mirror_content_pull_mirror: false
+common_content_pull: false
 
 #agent_iso_cluster_name: ocp-sno
 common_openshift_interface: eno1

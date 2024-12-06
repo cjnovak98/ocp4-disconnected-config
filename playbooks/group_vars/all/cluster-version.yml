@@ -3,6 +3,7 @@
 common_openshift_release: 4.16.4
 common_previous_openshift_release: 4.16.3
 common_trident_version: v24.06.0
+mirror_content_oc_mirror_v2: true
 
 
 # Disconnected Images
