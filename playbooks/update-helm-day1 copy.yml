@@ -1,0 +1,8 @@
+#!/usr/bin/ansible-playbook -K
+- hosts: localhost
+  gather_facts: true
+  roles:
+    - role: ocp4.disconnected.common
+    - role: ocp4.disconnected.day1_automation
+      vars:
+        helm_options: "--dry-run=client"

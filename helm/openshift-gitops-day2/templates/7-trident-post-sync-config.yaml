@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: trident-config-
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ .Values.storage.configContainerName }}
+        image: {{ .Values.storage.configContainerImage }}
+        command: |
+          echo '{"version": 1, "storageDriverName": "ontap-nas", "backendName": "ontap-nas-backend", "managementLIF": "{{ .Values.storage.managementLIF }}", "dataLIF": "{{ .Values.storage.dataLIF }}", "svm": "nfssvm", "username": "{{ .Values.storage.username }}", "password": "{{ .Values.storage.password }}"}' | jq . > backend.json
+
+          tridentctl install \
+            --namespace {{ .Values.storage.namespace }} \
+            --image-registry {{ .Values.storage.imageRegistry }} \
+            --autosupport-image {{ .Values.storage.autosupportImage }} \
+            --trident-image {{ .Values.storage.tridentImage }} 
+
+
+          tridentctl create backend \
+            --namespace trident \
+            -f "backend.json"
+      restartPolicy: Never
+  backoffLimit: 2
+
