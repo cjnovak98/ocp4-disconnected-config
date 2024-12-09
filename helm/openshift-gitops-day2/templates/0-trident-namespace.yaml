@@ -1,0 +1,16 @@
+{{- with .Values.storage }}
+# Defines the namespace we want to place the nmstate operator into
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    kubernetes.io/metadata.name: {{ .namespace | default "trident" }}
+    name: {{ .namespace | default "trident" }}
+  name: {{ .namespace | default "trident" }}
+spec:
+  finalizers:
+  - kubernetes
+
+{{- end }}
