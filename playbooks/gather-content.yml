@@ -2,13 +2,13 @@
 - hosts: localhost
   gather_facts: true
   vars:
-    mirror_content_pull_mirror: true
+    common_content_pull: true
   roles:
     - role: ocp4.disconnected.mirror_content
       tags: push_cluster_images, stage_0
       vars:
         direction: pull
       when: 
-        - mirror_content_pull_mirror | bool
+        - common_content_pull | bool
         - common_connected_cluster is false
 
