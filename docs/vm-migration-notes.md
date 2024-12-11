@@ -4,19 +4,23 @@
 
 This guide outlines the steps to migrate virtual machines (VMs) from VMware vCenter to OpenShift Virtualization. It includes setting up networking, managing VM configurations, executing the migration, and troubleshooting common issues.
 
+> First prepare the ESXi/vSphere enviornment
+
 1. EXPAND: migrate all target vms to singl esxi host <!-- - TODO: add steps and screenshots to Migrate all target vms to single esxi host  -->
 1. EXPAND: remove esxi host from vcenter <!-- - TODO: add steps and screenshots to remove esxi host from vcenter -->
 1. EXPAND: disable fast-boot and gracefully shut down windows vms <!-- - TODO: add steps and screenshots to disable fast-boot on windows vms -->
-1. EXPAND: gracefully shut down remaining linux vms if necessary <!-- - TODO: add steps and screenshots to graceful shut down remaining vms --> 
+1. EXPAND: gracefully shut down remaining linux vms if necessary <!-- - TODO: add steps and screenshots to graceful shut down remaining vms -->
 1. Go to `{{OPENSHIFT_URL}}`
-1. Click `{{LOGIN_BUTTON}}` to login <!-- TODO: Login Screenshot -->
+1. Click `{{LOGIN_BUTTON}}` to login
+    ![](/docs/images/screenshots/getAPIToken2.PNG "OCP Login screen")
 1. Switch to Administrator perspective (if not already)
 1. Click `Operators` in menu on left navigation
 1. Click `Installed Operators` in sub-menu
-1. Verify you see the following <!-- TODO: verify installed operators screenshot -->
+1. Verify you see the following
     - Openshift Virtualization
     - Migration Toolkit for Virtualization
     - Kubernetes NMState
+    ![](/docs/images/screenshots/verifyOperators.PNG "OCP Login screen")
 1. Click `Networking` in the left navigation menu
 1. Click `NodeNetworkConfigurationPolicy`
 1. Verify you see the `bond0` object <!-- TODO: verify and add screenshot for verifying networking -->
