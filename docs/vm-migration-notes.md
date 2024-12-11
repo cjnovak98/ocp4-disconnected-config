@@ -4,61 +4,143 @@
 
 This guide outlines the steps to migrate virtual machines (VMs) from VMware vCenter to OpenShift Virtualization. It includes setting up networking, managing VM configurations, executing the migration, and troubleshooting common issues.
 
-## Prepare ESXi/vSphere environment
+## Step 1: Prepare ESXi/vSphere environment
 
-(@) EXPAND: migrate all target vms to singl esxi host <!-- - TODO: add steps and screenshots to Migrate all target vms to single esxi host  -->
-(@) EXPAND: remove esxi host from vcenter <!-- - TODO: add steps and screenshots to remove esxi host from vcenter -->
-(@) EXPAND: disable fast-boot and gracefully shut down windows vms <!-- - TODO: add steps and screenshots to disable fast-boot on windows vms -->
-(@) EXPAND: gracefully shut down remaining linux vms if necessary <!-- - TODO: add steps and screenshots to graceful shut down remaining vms -->
+1.1 EXPAND: migrate all target vms to single esxi host <!-- - TODO: add steps and screenshots to Migrate all target vms to single esxi host  -->
 
-## Prepare Openshift Virtualization environment
+1.2 EXPAND: remove esxi host from vcenter <!-- - TODO: add steps and screenshots to remove esxi host from vcenter -->
 
-(@) Go to `{{OPENSHIFT_URL}}`
-(@) Click `{{LOGIN_BUTTON}}` to login
+1.3 EXPAND: disable fast-boot and gracefully shut down windows vms <!-- - TODO: add steps and screenshots to disable fast-boot on windows vms -->
+
+1.4 EXPAND: gracefully shut down remaining linux vms if necessary <!-- - TODO: add steps and screenshots to graceful shut down remaining vms -->
+
+## Step 2: Prepare OpenShift Virtualization environment
+
+### First we login to the OpenShift console in the web browser.
+
+2.1 Go to `{{OPENSHIFT_URL}}`
+
+2.2 Click `{{LOGIN_BUTTON}}` to login
 
 ![](docs/images/screenshots/getAPIToken2.PNG "OCP Login screen")
 
-(@) Switch to Administrator perspective (if not already)
-(@) Click `Operators` in menu on left navigation
-(@) Click `Installed Operators` in sub-menu
-(@) Verify you see the following
+### In the next few steps we are making sure the automation successfully installed some critical components
+
+2.3 Switch to Administrator perspective (if not already)
+
+2.4 Click `Operators` in menu on left navigation
+
+2.5 Click `Installed Operators` in sub-menu
+
+2.6 Ensure project is set to `All Projects` at the top
+
+2.7 Verify you see the following
     - Openshift Virtualization
     - Migration Toolkit for Virtualization
     - Kubernetes NMState
 
-![](docs/images/screenshots/verifyOperators.PNG "OCP Login screen")
+![](docs/images/screenshots/verifyOperators.PNG "verify operators screen")
 
-(@) Click `Networking` in the left navigation menu
-(@) Click `NodeNetworkConfigurationPolicy`
-(@) Verify you see the `bond0` object <!-- TODO: verify and add screenshot for verifying networking -->
-(@) Click `Migration` --> `Providers for virtualization` in the left navigation menu
-(@) Ensure Project is set to `dcgs-vms` at the top
-(@) Click `Create Provider` <!-- TODO: add screenshot -->
-(@) Click `VM vSphere` option under `Provider details`
-(@) Type `esxi-host` for the `Provider resource name` field (all lowercase and no spaces)
-(@) Change the `Endpoint type` from vCenter to `ESXi`
-(@) Type in the `URL` (i.e. https://1.1.1.1/sdk)
-(@) Type in `{{SYSCON_IP_ADDR}}/dcgs/vddk:2` for the `VDDK init image` path field
-(@) Type in the ESXi username for `Username`
-(@) Type in the ESXi password for the `Password`
-(@) Click the `Skip certificate validation` radio button
-(@) Click the blue `Create provider` button <!-- TODO: add screenshot -->
-(@) Get user api token by clicking your username in the top right and then `Copy Login Command` <!-- TODO: add screenshot for copy login command -->
-(@) Click `{{LOGIN_BUTTON}}` to verify login <!-- TODO: screenshot for login buton -->
-(@) Click `Display Token` <!-- TODO: Add screenshot for display token -->
-(@) Copy the sha256~ token displayed <!-- TODO: screenshot for copying token -->
-(@) Click `Migration` --> `Providers for virtualization` in the left navigation menu. NOTE: This is a second provider being added, so some steps will be a repeat from earlier.
-(@) Ensure Project is set to `dcgs-vms` at the top <!-- TODO: Add screenshot for settng project -->
-(@) Click `Create Provider` <!-- TODO: add screenshot -->
-(@) Select `Openshift Virtualization` for the provider type
-(@) Type `ocpvirt` for the `Provider resource name`
-(@) Type `{{OPENSHIFT_CLUSTER_API_URL}}` for the URL
-(@) Paste in your sha256~ token value that you copied earlier into the `Service account bearer token` field
-(@) Click the `Skip certificate validation` radio button
-(@) Click `Create Provider` <!-- TODO: add screenshot -->
-(@) Click `Operators` --> `Installed Operators` in the left navigation menu
-(@) Ensure project is set to `All Projects` at the top
-(@) Select the `Migration Toolkit for Virtualization Operator` option <!-- TODO: add screenshot -->
+2.8 Click `Networking` in the left navigation menu
+
+2.9 Click `NodeNetworkConfigurationPolicy`
+
+2.10 Verify you see the following objects: <!-- TODO: verify and add screenshot for verifying networking -->
+  - bond0
+  - etc <!-- TODO: verify which objects are needed -->
+
+### Now we will configure the `Migration Toolkit` operator so that it can see the source host where the vms will be migrated from
+
+> Note: you will need the username and login for the ESXi host
+
+2.11 Click `Migration` --> `Providers for virtualization` in the left navigation menu
+
+2.12 Ensure Project is set to `{{PROJECT_NAME}}` at the top
+
+2.13 Click `Create Provider`
+
+![](docs/images/screenshots/createSourceProvider.PNG "create source provider")
+
+2.14 Select `VM vSphere` option under `Provider details`
+
+![](docs/images/screenshots/createSourceProvider2.PNG "create source provider")
+
+2.15 Type `esxi-host` for the `Provider resource name` field (all lowercase and no spaces)
+
+2.16 Change the `Endpoint type` from vCenter to `ESXi`
+
+2.17 Type in the `URL` (i.e. https://1.1.1.1/sdk)
+
+2.18 Type in `{{SYSCON_IP_ADDR}}/dcgs/vddk:2` for the `VDDK init image` path field
+
+2.19 Type in the ESXi username for `Username`
+
+2.20  Type in the ESXi password for the `Password`
+
+2.21 Click the `Skip certificate validation` radio button
+
+2.22 Click the blue `Create provider` button 
+
+![](docs/images/screenshots/createSourceProvider3.PNG "create source provider")
+
+### Now we will configure the `Migration Toolkit` operator so that it can see the OpenShift virtualization environment where the vms will be migrated to
+
+> In the first few steps we will get the OpenShift API token for your user so that we can add that credential. Note: some steps will be a repeat from above.
+
+2.23 Click the down arrow next to your username at the top right
+
+2.24 Click `Copy Login Command`
+
+![](docs/images/screenshots/getAPIToken1.PNG "get api token")
+
+2.25 Click `{{LOGIN_BUTTON}}` to verify login
+
+![](docs/images/screenshots/getAPIToken2.PNG "get api token")
+
+2.26 Type in your username and password and click `Login`
+
+![](docs/images/screenshots/getAPIToken3.PNG "get api token")
+
+2.27 Click `Display Token`
+
+![](docs/images/screenshots/getAPIToken4.PNG "get api token")
+
+2.28 Copy the line where your `sha256~....` token is displayed
+
+![](docs/images/screenshots/getAPIToken5.PNG "get api token")
+
+2.29 Click `Migration` --> `Providers for virtualization` in the left navigation menu. NOTE: This is a second provider being added, so some steps will be a repeat from earlier.
+
+2.30 Ensure Project is set to `{{PROJECT_NAME}}` at the top 
+
+2.31 Click `Create Provider`
+
+![](docs/images/screenshots/createSourceProvider-ocp.PNG "create source provider")
+
+2.32 Select `Openshift Virtualization` for the provider type
+
+2.33 Type `ocpvirt` for the `Provider resource name`
+
+2.34 Type `{{OPENSHIFT_CLUSTER_API_URL}}` for the URL
+
+2.35 Paste in your sha256~ token value that you copied earlier into the `Service account bearer token` field
+
+2.36 Click the `Skip certificate validation` radio button
+
+2.37 Click `Create Provider`
+
+![](docs/images/screenshots/createTargetProvider2.PNG "create target provider")
+
+### In this next section we will modify a default setting for the maximum number of VMs that can be imported simultaneously. This is to prevent resource contraint related issues
+
+2.38 Click `Operators` --> `Installed Operators` in the left navigation menu
+
+2.39 Ensure project is set to `All Projects` at the top
+
+2.40 Select the `Migration Toolkit for Virtualization Operator` option 
+
+![](docs/images/screenshots/edit_max_inflight_1.PNG "edit max inflight")
+
 (@) Switch to the `ForkliftController` tab
 (@) Select the `FC forklift-controller` resource <!-- TODO: add screenshot -->
 (@) Switch to the `YAML` tab at the top and wait for it to load (text will colorize once resource is loaded)
