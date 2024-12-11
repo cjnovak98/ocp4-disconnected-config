@@ -141,37 +141,92 @@ This guide outlines the steps to migrate virtual machines (VMs) from VMware vCen
 
 ![](docs/images/screenshots/edit_max_inflight_1.PNG "edit max inflight")
 
-(@) Switch to the `ForkliftController` tab
-(@) Select the `FC forklift-controller` resource <!-- TODO: add screenshot -->
-(@) Switch to the `YAML` tab at the top and wait for it to load (text will colorize once resource is loaded)
-(@) Type `controller_max_vm_inflight: 5` immediately following the `spec:` line. (ensure proper spacing allignment) 
-(@) Click `Save` <!-- TODO: add screenshot -->
-(@) Click `Migration` --> `Plans for virtualization` in the left navigation menu
-(@) Ensure project is set to `dcgs-vms` at the top
-(@) Click `Create Plan` <!-- TODO: add screenshot to create the migration plan -->
-(@) Select `esxi-host` source provider <!-- TODO: Screenshot for selecting source provider -->
-(@) Once the list of available VMs is loaded, change the number of displayed results to 100 for easier selection process <!-- TODO: add screenshot -->
-(@) Select vms intended to be migrated over 
-(@) Click `Next` <!-- TODO: add screenshot -->
-(@) Type `dcgs-vm-migration-initial` for the `Plan name` field. (all lowercase and no spaces)
-(@) Verify the number of `Selected VMs` is what you expect
-(@) Select `ocpvirt` for the `Target provider`
-(@) Ensure `dcgs-vms` is selected for `Target namespace`
-(@) Complete the network mappings by matching the appropriate vlan ids
-(@) Verify storage map is set to `basic-csi` on the right. 
-(@) Click `Create migration plan` <!-- TODO: add screenshot -->
-(@) Wait for Migration Plan to be validated (you can expect to see a Warning flag and this validation may take several minutes before the next button is available) <!-- TODO: Screenshot for what a validated migration plan should look like -->
-(@) Once validation is complete, click `Start Migration` button. <!-- TODO: add screenshot -->
-(@) Once the migration has started the page should display some progress bars <!-- TODO: add screenshot -->
-(@) Switch to `Virtual Machines` tab to monitor progress <!-- TODO: screenshot for starting migration and progress screen -->
-(@) Once all VMs have been migrated, go back to syscon console
-(@) Change directory to the config repo if not already there (i.e. /opt/syscon/ocp4-disconnected-config)
-(@) Run command `./scripts/update-drivers.sh`
-(@) Go back to the Openshift Console in the browser window
-(@) Select `Virtualization` --> `VirtualMachines` in the left navigation menu
-(@) Ensure the project is set to `dcgs-vms` at the top
-(@) You should see a list of your migrated virtual machines on this screen and be able to click on them to manage them.
+2.41 Switch to the `ForkliftController` tab
 
-5 Troubleshooting and more information
+2.42 Select the `FC forklift-controller` resource
 
-6 Alternate migration method (manual ova copy instructions)
+![](docs/images/screenshots/edit_max_inflight_2.PNG "edit max inflight")
+
+2.43 Switch to the `YAML` tab at the top and wait for it to load (text will colorize once resource is loaded)
+
+2.44 Type `controller_max_vm_inflight: 5` immediately following the `spec:` line. (ensure proper spacing allignment) 
+
+2.45 Click `Save` 
+<!-- TODO: add screenshot -->
+
+### Step 3: Create Migration Plan
+
+3.1 Click `Migration` --> `Plans for virtualization` in the left navigation menu
+
+3.2 Ensure project is set to `{{PROJECT_NAME}}` at the top
+
+3.3 Click `Create Plan` 
+<!-- TODO: add screenshot to create the migration plan -->
+
+3.4 Select `esxi-host` source provider 
+
+3.5 Once the list of available VMs is loaded, change the number of displayed results to 100 for easier selection process 
+
+![](docs/images/screenshots/createMigrationPlan2.PNG "create migration plan")
+
+3.6 Select vms intended to be migrated over 
+
+3.7 Click `Next`
+
+![](docs/images/screenshots/createMigrationPlan3.PNG "create migration plan")
+
+3.8 Type `vm-migration-initial` for the `Plan name` field. (all lowercase and no spaces)
+
+3.9 Verify the number of `Selected VMs` is what you expect
+
+3.10 Select `ocpvirt` for the `Target provider`
+
+3.11 Ensure `dcgs-vms` is selected for `Target namespace`
+
+3.12 Complete the network mappings by matching the appropriate vlan ids
+
+3.13 Verify storage map is set to `basic-csi` on the right. 
+
+3.14 Click `Create migration plan`
+
+![](docs/images/screenshots/createMigrationPlan4.PNG "create migration plan")
+
+3.15 Wait for Migration Plan to be validated (you can expect to see a Warning flag and this validation may take several minutes before the next button is available) 
+
+![](docs/images/screenshots/createMigrationPlan5.PNG "create migration plan")
+
+3.16 Once validation is complete, click `Start Migration` button. 
+
+![](docs/images/screenshots/createMigrationPlan6.PNG "create migration plan")
+
+3.17 Click `Start`
+
+![](docs/images/screenshots/createMigrationPlan7.PNG "create migration plan")
+
+3.18 Once the migration has started the page should display some progress bars
+
+![](docs/images/screenshots/createMigrationPlan8.PNG "create migration plan")
+
+3.19 Switch to `Virtual Machines` tab to monitor progress
+
+![](docs/images/screenshots/createMigrationPlan9.PNG "create migration plan")
+
+## Step 4: Post Migration Update to VMs to update drivers
+
+4.1 Once all VMs have been migrated, go back to syscon console
+
+4.2 Change directory to the config repo if not already there (i.e. /opt/syscon/ocp4-disconnected-config)
+
+4.3 Run command `./scripts/update-drivers.sh`
+
+4.4 Go back to the Openshift Console in the browser window
+
+4.5 Select `Virtualization` --> `VirtualMachines` in the left navigation menu
+
+4.6 Ensure the project is set to `dcgs-vms` at the top
+
+4.7 You should see a list of your migrated virtual machines on this screen and be able to click on them to manage them.
+
+## 5 Troubleshooting and more information
+
+## 6 Alternate migration method (manual ova copy instructions)
