@@ -215,7 +215,7 @@ This guide outlines the steps to migrate virtual machines (VMs) from VMware vCen
 
 4.1 Once all VMs have been migrated, go back to syscon console
 
-4.2 Change directory to the config repo if not already there (i.e. /opt/syscon/ocp4-disconnected-config)
+4.2 Change directory to the config repo if not already there (i.e. /opt/ocp4-disconnected-config)
 
 4.3 Run command `./scripts/update-drivers.sh`
 
