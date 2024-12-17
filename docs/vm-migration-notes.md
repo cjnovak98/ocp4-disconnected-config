@@ -4,251 +4,229 @@
 
 This guide outlines the steps to migrate virtual machines (VMs) from VMware vCenter to OpenShift Virtualization. It includes setting up networking, managing VM configurations, executing the migration, and troubleshooting common issues.
 
-## Pre-Migration Preparation
-
-
-### 1. Access and Permissions
-
-* Ensure you have the necessary access permissions to both VMware vCenter and OpenShift Virtualization clusters.
-* Create source provider(s) for vmware and/or vcenter:
-	* Steps for creating a provider can be found here: [https://docs.redhat.com/en/documentation/migration_toolkit_for_virtualization/2.7/html-single/installing_and_using_the_migration_toolkit_for_virtualization/index#mtv-overview-page_mtv](https://docs.redhat.com/en/documentation/migration_toolkit_for_virtualization/2.7/html-single/installing_and_using_the_migration_toolkit_for_virtualization/index#mtv-overview-page_mtv)
-* Verify the following operators are properly configured in OpenShift:
-	* Virtualization Operator
-		* for hosting the migrated virtual machines
-	* Migration Toolkit for Virtualization Operator
-		* to support a more automated migration of virtual machines off of VMware
-	* Kubernetes NMState Operator
-		* to manage the required networking configurations for the machines
-
-### 2. Identify/Prepare Target VMs
-
-Ensure the VM(s) you wish to migrate are properly identified in VMware. 
-
-> WARNING: These VMs will need to be powered down for the migration and remain down for testing to avoid IP conflicts.
-
-### 3. Networking Setup
-
-* Create Bond: Create the Bond network using a Node Network Configuration Policy (NNCP). Example:
-
-```yaml
-apiVersion: nmstate.io/v1
-kind: NodeNetworkConfigurationPolicy
-metadata:
-name: bond0
-spec:
-desiredState:
-    interfaces:
-    - name: bond0
-        type: bond
-        link-aggregation:
-        mode: 802.3ad
-        port:
-            - ens2f0
-            - ens2f1
-            - ens3f0
-            - ens3f1
-```
-
-* Create VLANs: Create VLANs to map network traffic between VMware and OpenShift Virtualization. 
-    * Example VLAN IDs: `677` (primary), `58` (for public networks), 59 (for public networks).
-[Example NodeNetworkConfigurationPolicy](https://github.com/cjnovak98/ocp4-disconnected-config/blob/main/Examples/node_network_config_policy.yaml)
-
-* Network Attachment: Apply network attachment definitions (NAD) that point to the appropriate VLAN. For instance, the primary network for the migrated VMs will map to VLAN 677, while public-facing VMs might use VLAN 58.
-  
-> NOTE: Unless communication is needed with the containers then it is recommended to set the container network as disabled in the network attachment definition.
-```yaml
----
-#Example Network Attachment Definitions
-
-apiVersion: "k8s.cni.cncf.io/v1"
-kind: NetworkAttachmentDefinition
-metadata:
-  name: bond0-bridge-vlan677 
-spec:
-  config: '{
-    "cniVersion": "0.3.1",
-    "name": "bond0-bridge-vlan677", 
-    "type": "bridge", 
-    "bridge": "bond0-br0", 
-    "macspoofchk": false, 
-    "vlan": 677
-  }'
-
----
-apiVersion: "k8s.cni.cncf.io/v1"
-kind: NetworkAttachmentDefinition
-metadata:
-  name: bond0-bridge-vlan58 
-spec:
-  config: '{
-    "cniVersion": "0.3.1",
-    "name": "bond0-bridge-vlan58", 
-    "type": "bridge", 
-    "bridge": "bond0-br0", 
-    "macspoofchk": false, 
-    "vlan": 58
-  }'
-```
+## Step 1: Prepare ESXi/vSphere environment
 
+1.1 EXPAND: migrate all target vms to single esxi host <!-- - TODO: add steps and screenshots to Migrate all target vms to single esxi host  -->
 
+1.2 EXPAND: remove esxi host from vcenter <!-- - TODO: add steps and screenshots to remove esxi host from vcenter -->
 
-## Migration Process
+1.3 EXPAND: disable fast-boot and gracefully shut down windows vms <!-- - TODO: add steps and screenshots to disable fast-boot on windows vms -->
 
+1.4 EXPAND: gracefully shut down remaining linux vms if necessary <!-- - TODO: add steps and screenshots to graceful shut down remaining vms -->
 
-### Plan Setup
+## Step 2: Prepare OpenShift Virtualization environment
 
-Migration plans are created in OpenShift using the Migration Toolkit. This plan selects the targeted virtual machines and specifies the source and destination environments.
+### First we login to the OpenShift console in the web browser.
 
-* Choose Source Provider: Depending on your requirements, you can select the following:
-    * ESXi Host (preferred): Directly migrate VMs from an ESXi host without going through vCenter. If you have access to the ESXi host directly this is the preferable source as it is faster and can handle more machines simultaneously. The limitation here is all of your specified VMs will need to be put onto this specific ESXi host in vCenter first or you will need to create a separate migration plan for each source ESXi host.
-    * vCenter: Migrate from the full vCenter environment, but avoid pulling too many VMs simultaneously to prevent system crashes. When using this plan you will want to limit the plan to a single VM.
+2.1 Go to `{{OPENSHIFT_URL}}`
 
-* Create Migration Plan:
-	* Select source provider (e.g., `esxi13-2` or `vcenter`).
-	* Enter a plan name using Kubernetes naming conventions:
-		* name must be unique among other migration plans
-		* at most 63 characters
-		* only lowercase alphanumeric characters or '-'
-		* start with alpha
-		* end with alphanumeric
-		* (e.g., `core-test-24oct-1449`).
-	* Choose target provider: OpenShift Virtualization.
-	* Set up network mapping:
-        * Map VMware networks to OpenShift VLANs (e.g., map vlan-677 to vlan-677 in OCP).
-	        * NOTE: if the source vlan numbers don't line up, vlan-677 is to be used for all internal communications and should likely be used by default. vlan 58 or 59 are considered the 'public' communication network.
-	        * If the target vlan is not available then review the network attachment definitions are set up properly.
-    * Set up storage mapping:
-        * Select OpenShift's temporary storage (e.g., openshift-temp) and map it to OpenShift's CSI storage (e.g., basic-csi).
+2.2 Click `{{LOGIN_BUTTON}}` to login
 
-* Start Migration: Click Start Migration to initiate the migration of selected VMs.
+![](docs/images/screenshots/getAPIToken2.PNG "OCP Login screen")
 
-### VM Post-Migration Configuration
+### In the next few steps we are making sure the automation successfully installed some critical components
 
-The virtio drivers that OpenShift Virtualization uses are not supported by default for the older versions of RHEL and Windows Server. Since OpenShift Virtualization defaults to virtio for the network and disk interfaces you will need to update that setting post migration. Once the migration process is complete, and the VM is created in OpenShift (e.g., web-qa), follow these steps:
+2.3 Switch to Administrator perspective (if not already)
 
-* Modify Network Interfaces:
-    * Ensure the network interfaces are set to e1000e.
-    * Be sure it is set to attach the VM to the correct VLAN (e.g., vlan-677 for internal network communication).
-* Modify Disk Configuration:
-    * Change the disk interface type from virtio to SATA 
-* Start the VM:
-    * Once all configurations are verified, go to Actions → Start to power on the VM in OpenShift Virtualization.
-    * If the VM is already running you must stop it and restart it in order for the changes to be applied.
+2.4 Click `Operators` in menu on left navigation
 
-### Dealing with Windows-Specific Issues
+2.5 Click `Installed Operators` in sub-menu
 
-For any Windows based VMs (e.g., Windows Server 2012), special steps are needed:
+2.6 Ensure project is set to `All Projects` at the top
 
-* Shutdown Windows Properly in vCenter:
-  * Always shut down the Windows VM gracefully: `shutdown /s`.
-  * Windows VMs can experience issues migrating due to hibernation or fast boot settings. When these are enabled it may cause the file system to be mounted as read-only which prevents the migration from taking place. 
-  
-  > NOTE: it appears fast boot is enabled by default for Windows Server 2012
+2.7 Verify you see the following
+    - Openshift Virtualization
+    - Migration Toolkit for Virtualization
+    - Kubernetes NMState
 
-## Recommended Practices and Considerations
+![](docs/images/screenshots/verifyOperators.PNG "verify operators screen")
 
-### VMs Not Starting After Migration
+2.8 Click `Networking` in the left navigation menu
 
-Any VMs running an OS which is not in the list of supported guest operating systems, or operating systems that have difficulty with the virtio drivers may need to use these other drivers for their disk and network interfaces:
+2.9 Click `NodeNetworkConfigurationPolicy`
 
-* Disk Configuration: Ensure all disks are configured to SATA after migration.
+2.10 Verify you see the following objects: <!-- TODO: verify and add screenshot for verifying networking -->
+  - bond0
+  - etc <!-- TODO: verify which objects are needed -->
 
-* Network Configuration: Double-check that the VM is connected to the correct VLAN and that e1000e is used for network interfaces. Additionally, if e1000e is the interface used in the VMware environment, then using this setting may help to ensure previous network configurations remain on the migrated VM.
+### Now we will configure the `Migration Toolkit` operator so that it can see the source host where the vms will be migrated from
 
-### Migration Plan Recommended Practices
+> Note: you will need the username and login for the ESXi host
 
-* Avoid migrating multiple VMs simultaneously from vCenter as this may overwhelm the system. Always perform migration of one VM at a time when migrating from vCenter as the source provider.
+2.11 Click `Migration` --> `Providers for virtualization` in the left navigation menu
 
-* It is also possible to throttle the number of simultaneous migrations in the MTV configurations. This will allow you to put more than one machine in a single migration plan (regardless of if it's from vCenter vs ESXi host) and not to overwhelm the source system. This can be done by modifying the `controller_max_vm_inflight` setting which is found in the forklift-controller CR created by the MTV operator. [More info for additional configuration options](https://docs.redhat.com/en/documentation/migration_toolkit_for_virtualization/2.7/html-single/installing_and_using_the_migration_toolkit_for_virtualization/index#configuring-mtv-operator_mtv)
+2.12 Ensure Project is set to `{{PROJECT_NAME}}` at the top
 
-```yaml
-spec:
-  controller_max_vm_inflight: <number> #defaults to 20
-```
+2.13 Click `Create Provider`
 
-### Saving and Re-Importing VMs
+![](docs/images/screenshots/createSourceProvider.PNG "create source provider")
 
-* Consider creating backups of VM data and configurations before migration, especially when dealing with production VMs.
+2.14 Select `VM vSphere` option under `Provider details`
 
-* Use tools like `virtctl` to upload images or configure persistent volumes. In case of failure, ensure you have a repeatable process for re-importing the VM images.
+![](docs/images/screenshots/createSourceProvider2.PNG "create source provider")
 
-### Migration Plan Failures
+2.15 Type `esxi-host` for the `Provider resource name` field (all lowercase and no spaces)
 
-* API Gateway Errors: If the migration fails due to a bad API gateway, verify network connectivity and access permissions for the gateway. Restarting the gateway or re-initiating the plan may resolve the issue.
+2.16 Change the `Endpoint type` from vCenter to `ESXi`
 
-* High RAM Usage: Monitor node resource usage during the migration process. Nodes with high memory consumption may affect the migration speed or cause failures.
+2.17 Type in the `URL` (i.e. https://1.1.1.1/sdk)
 
-### More information:
-* More detailed information can be found in the migration toolkit user guide: [https://docs.redhat.com/en/documentation/migration_toolkit_for_virtualization/2.7](https://docs.redhat.com/en/documentation/migration_toolkit_for_virtualization/2.7)
+2.18 Type in `{{SYSCON_IP_ADDR}}/dcgs/vddk:2` for the `VDDK init image` path field
 
-* More detailed information about OpenShift Virtualization in general can be found here: [https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/virtualization/index](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/virtualization/index)
+2.19 Type in the ESXi username for `Username`
 
+2.20  Type in the ESXi password for the `Password`
 
-## Automation Notes
+2.21 Click the `Skip certificate validation` radio button
 
-<!-- TODO: update example with JT's script for this step -->
+2.22 Click the blue `Create provider` button 
 
-Automatically update the disk and network interfaces for all virtual machines with a script. This script:
+![](docs/images/screenshots/createSourceProvider3.PNG "create source provider")
 
-* gets the current configurations for all vms on openshift and then loops through each to
-  * modify the storage and network interfaces to use SATA/e1000e to prevent any potential virtio/storage issues for unsupported guest operating systems
-  * apply the updated config
-  * start or restart the VM
+### Now we will configure the `Migration Toolkit` operator so that it can see the OpenShift virtualization environment where the vms will be migrated to
 
-```bash
-!#/bin/bash
+> In the first few steps we will get the OpenShift API token for your user so that we can add that credential. Note: some steps will be a repeat from above.
 
-# Set namespace and project
-NAMESPACE="your-namespace"
+2.23 Click the down arrow next to your username at the top right
 
-# Get all VirtualMachine configurations from OpenShift
-echo "Fetching all VM configurations..."
-oc get vm -n "$NAMESPACE" -o name | while read -r vm; do
-    echo "Processing $vm..."
+2.24 Click `Copy Login Command`
 
-    # Export the VM's YAML config
-    oc get "$vm" -n "$NAMESPACE" -o yaml > "/tmp/${vm//\//-}.yaml"
+![](docs/images/screenshots/getAPIToken1.PNG "get api token")
 
-    # Check if the YAML file exists
-    if [[ ! -f "/tmp/${vm//\//-}.yaml" ]]; then
-        echo "Error: Could not fetch YAML for $vm. Skipping..."
-        continue
-    fi
+2.25 Click `{{LOGIN_BUTTON}}` to verify login
 
-    # Perform sed replacement on disk interface type (virtio -> sata)
-    echo "Updating disk interface to 'sata'"
-    sed -i '/disk:/,/interface:/s/virtio/sata/g' "/tmp/${vm//\//-}.yaml"
+![](docs/images/screenshots/getAPIToken2.PNG "get api token")
 
-    # Perform sed replacement on network interface type (virtio -> e1000e)
-    echo "Updating network interface to 'e1000e'"
-    sed -i '/networkInterfaces:/,/model:/s/virtio/e1000e/g' "/tmp/${vm//\//-}.yaml"
+2.26 Type in your username and password and click `Login`
 
-    # Apply the updated YAML to OpenShift
-    echo "Applying updated configuration for $vm..."
-    oc apply -f "/tmp/${vm//\//-}.yaml" -n "$NAMESPACE"
+![](docs/images/screenshots/getAPIToken3.PNG "get api token")
 
-    # Check if the VM is running or stopped 
-    vm_status=$(virtctl status "$vm" -n "$NAMESPACE" | grep -oP "(?<=Status: )\w+") 
-    
-    if [[ "$vm_status" == "Running" ]];
-        echo "VM $vm is running. Stopping now..." 
-        virtctl stop "$vm" 
-    elif [[ "$vm_status" == "Stopped" ]];
-        echo "VM $vm is already stopped." 
-    else 
-        echo "VM $vm is in an unknown state: $vm_status. Skipping restart..." 
-        continue 
-    fi
+2.27 Click `Display Token`
 
-    # Start the VM 
-    virtctl start "$vm"
+![](docs/images/screenshots/getAPIToken4.PNG "get api token")
 
-    # Clean up the temporary file
-    rm -f "/tmp/${vm//\//-}.yaml"
+2.28 Copy the line where your `sha256~....` token is displayed
 
-    echo "Finished processing $vm."
-done
+![](docs/images/screenshots/getAPIToken5.PNG "get api token")
 
-echo "All VM configurations updated successfully!"
+2.29 Click `Migration` --> `Providers for virtualization` in the left navigation menu. NOTE: This is a second provider being added, so some steps will be a repeat from earlier.
 
-```
+2.30 Ensure Project is set to `{{PROJECT_NAME}}` at the top 
+
+2.31 Click `Create Provider`
+
+![](docs/images/screenshots/createSourceProvider-ocp.PNG "create source provider")
+
+2.32 Select `Openshift Virtualization` for the provider type
+
+2.33 Type `ocpvirt` for the `Provider resource name`
+
+2.34 Type `{{OPENSHIFT_CLUSTER_API_URL}}` for the URL
+
+2.35 Paste in your sha256~ token value that you copied earlier into the `Service account bearer token` field
+
+2.36 Click the `Skip certificate validation` radio button
+
+2.37 Click `Create Provider`
+
+![](docs/images/screenshots/createTargetProvider2.PNG "create target provider")
+
+### In this next section we will modify a default setting for the maximum number of VMs that can be imported simultaneously. This is to prevent resource contraint related issues
+
+2.38 Click `Operators` --> `Installed Operators` in the left navigation menu
+
+2.39 Ensure project is set to `All Projects` at the top
+
+2.40 Select the `Migration Toolkit for Virtualization Operator` option 
+
+![](docs/images/screenshots/edit_max_inflight_1.PNG "edit max inflight")
+
+2.41 Switch to the `ForkliftController` tab
+
+2.42 Select the `FC forklift-controller` resource
+
+![](docs/images/screenshots/edit_max_inflight_2.PNG "edit max inflight")
+
+2.43 Switch to the `YAML` tab at the top and wait for it to load (text will colorize once resource is loaded)
+
+2.44 Type `controller_max_vm_inflight: 5` immediately following the `spec:` line. (ensure proper spacing allignment) 
+
+2.45 Click `Save` 
+<!-- TODO: add screenshot -->
+
+### Step 3: Create Migration Plan
+
+3.1 Click `Migration` --> `Plans for virtualization` in the left navigation menu
+
+3.2 Ensure project is set to `{{PROJECT_NAME}}` at the top
+
+3.3 Click `Create Plan` 
+<!-- TODO: add screenshot to create the migration plan -->
+
+3.4 Select `esxi-host` source provider 
+
+3.5 Once the list of available VMs is loaded, change the number of displayed results to 100 for easier selection process 
+
+![](docs/images/screenshots/createMigrationPlan2.PNG "create migration plan")
+
+3.6 Select vms intended to be migrated over 
+
+3.7 Click `Next`
+
+![](docs/images/screenshots/createMigrationPlan3.PNG "create migration plan")
+
+3.8 Type `vm-migration-initial` for the `Plan name` field. (all lowercase and no spaces)
+
+3.9 Verify the number of `Selected VMs` is what you expect
+
+3.10 Select `ocpvirt` for the `Target provider`
+
+3.11 Ensure `dcgs-vms` is selected for `Target namespace`
+
+3.12 Complete the network mappings by matching the appropriate vlan ids
+
+3.13 Verify storage map is set to `basic-csi` on the right. 
+
+3.14 Click `Create migration plan`
+
+![](docs/images/screenshots/createMigrationPlan4.PNG "create migration plan")
+
+3.15 Wait for Migration Plan to be validated (you can expect to see a Warning flag and this validation may take several minutes before the next button is available) 
+
+![](docs/images/screenshots/createMigrationPlan5.PNG "create migration plan")
+
+3.16 Once validation is complete, click `Start Migration` button. 
+
+![](docs/images/screenshots/createMigrationPlan6.PNG "create migration plan")
+
+3.17 Click `Start`
+
+![](docs/images/screenshots/createMigrationPlan7.PNG "create migration plan")
+
+3.18 Once the migration has started the page should display some progress bars
+
+![](docs/images/screenshots/createMigrationPlan8.PNG "create migration plan")
+
+3.19 Switch to `Virtual Machines` tab to monitor progress
+
+![](docs/images/screenshots/createMigrationPlan9.PNG "create migration plan")
+
+## Step 4: Post Migration Update to VMs to update drivers
+
+4.1 Once all VMs have been migrated, go back to syscon console
+
+4.2 Change directory to the config repo if not already there (i.e. /opt/ocp4-disconnected-config)
+
+4.3 Run command `./scripts/update-drivers.sh`
+
+4.4 Go back to the Openshift Console in the browser window
+
+4.5 Select `Virtualization` --> `VirtualMachines` in the left navigation menu
+
+4.6 Ensure the project is set to `dcgs-vms` at the top
+
+4.7 You should see a list of your migrated virtual machines on this screen and be able to click on them to manage them.
+
+## 5 Troubleshooting and more information
+
+## 6 Alternate migration method (manual ova copy instructions)
