@@ -71,7 +71,7 @@ This guide outlines the steps to migrate virtual machines (VMs) from VMware vCen
 
 2.17 Type in the `URL` (i.e. https://1.1.1.1/sdk)
 
-2.18 Type in `{{SYSCON_IP_ADDR}}/dcgs/vddk:2` for the `VDDK init image` path field
+2.18 Type in `{{BASTION_IP_ADDR}}/YOUR_PROJECT/vddk:2` for the `VDDK init image` path field
 
 2.19 Type in the ESXi username for `Username`
 
@@ -181,7 +181,7 @@ This guide outlines the steps to migrate virtual machines (VMs) from VMware vCen
 
 3.10 Select `ocpvirt` for the `Target provider`
 
-3.11 Ensure `dcgs-vms` is selected for `Target namespace`
+3.11 Ensure `YOUR_PROJECT` is selected for `Target namespace`
 
 3.12 Complete the network mappings by matching the appropriate vlan ids
 
@@ -213,7 +213,7 @@ This guide outlines the steps to migrate virtual machines (VMs) from VMware vCen
 
 ## Step 4: Post Migration Update to VMs to update drivers
 
-4.1 Once all VMs have been migrated, go back to syscon console
+4.1 Once all VMs have been migrated, go back to bastion console
 
 4.2 Change directory to the config repo if not already there (i.e. /opt/ocp4-disconnected-config)
 
@@ -223,7 +223,7 @@ This guide outlines the steps to migrate virtual machines (VMs) from VMware vCen
 
 4.5 Select `Virtualization` --> `VirtualMachines` in the left navigation menu
 
-4.6 Ensure the project is set to `dcgs-vms` at the top
+4.6 Ensure the project is set to `YOUR_PROJECT` at the top
 
 4.7 You should see a list of your migrated virtual machines on this screen and be able to click on them to manage them.
 

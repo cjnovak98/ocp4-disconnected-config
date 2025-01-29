@@ -26,9 +26,9 @@ install_packages() {
 
 # Generate PDF with pandoc
 generate_pdf() {
-  pandoc -f markdown -o openshift-dcgs-installation.pdf -V geometry:margin=1in \
-    --metadata=title["DCGS OpenShift"] "${INPUT_FILES[@]}"
-  echo "PDF generated: openshift-dcgs-installation.pdf"
+  pandoc -f markdown -o install_instructions.pdf -V geometry:margin=1in \
+    --metadata=title["Disconnected OpenShift"] "${INPUT_FILES[@]}"
+  echo "PDF generated: install_instructions.pdf"
 }
 
 install_packages

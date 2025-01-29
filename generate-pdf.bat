@@ -1,6 +1,6 @@
 @echo off
 REM Define the target output file name
-set PDF_FILE_NAME=openshift-dcgs-installation.pdf
+set PDF_FILE_NAME=install_instructions.pdf
 
 REM Define the pandoc variables
 set PANDOC_VARS=-V geometry:margin=1in ^
@@ -51,7 +51,7 @@ REM
 echo Generating PDF using Pandoc...
 pandoc ^
   -f markdown ^
-  --metadata=title:"DCGS OpenShift" ^
+  --metadata=title:"Disconnected OpenShift and VM Migration" ^
   %PANDOC_VARS% ^
   -o %PDF_FILE_NAME% ^
   %INPUT_FILES%
