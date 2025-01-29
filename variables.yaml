@@ -13,6 +13,17 @@ common_nodes:
     ip: '43'
     mac: 52:54:00:8d:13:78
 
+trident_backend_config: |-
+  {
+    "version": 1,
+    "storageDriverName": "ontap-nas",
+    "backendName": "ontap-nas-backend",
+    "managementLIF": "192.168.8.4",
+    "dataLIF": "192.168.8.3",
+    "svm": "nfssvm",
+    "username": "openshift",
+    "password": "changeme"
+  }
 #########################################
 
 
@@ -92,4 +103,113 @@ content_generation_additionalImages:
 
 
 #### ARCHIVED (?)
+
+gitOps:
+  namespace: openshift-gitops
+#  source: redhat-operators
+  source: cs-redhat-operator-index-v4-16
+
+gitRepoTemplate:
+  # The URL of the repository setup in the Ansible step.
+  url: git@<ip of host>:repos/ocp4-disconnected-config
+  # The SSH key of the user that ran the Ansible step, used to connect to the git repo
+  sshPrivateKey: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    -----END OPENSSH PRIVATE KEY-----
+# General cluster-level information
+cluster:
+  # Used in the proxy to specify the certs to use there.
+  # Used in proxy-custom-ca-cm.yaml in turn used by proxy.yaml
+  ca:
+#    # true if you have a cert and want to set it, false to skip setting a cluster ca.
+mtv:
+  enabled: true
+  catalog_source: cs-redhat-operator-index-v4-16
+  target_namespace: openshift-mtv
+  controller_max_vm_inflight: 20
+  # these values will need to be replaced by actual vcenter info in order to pull over VMs from that source
+  provider:
+    name: mtv-provider
+    secret: mtv-secret
+    url: https://mtv-url/sdk
+    endpoint: mtv-endpoint
+    init_image: mtv-registry/init/image:1
+
+namespace:
+  - ns: openshift-mtv
+  - ns: openshift-nmstate
+  
+nmstate:
+  enabled: true
+  catalog_source: cs-redhat-operator-index-v4-16
+  target_namespace: openshift-nmstate
+
+nncps:
+  bond:
+    name: bond0
+    bond:
+      ports:
+        - ens2f0
+        - ens2f1
+        - ens3f0  
+        - ens3f1
+        # etc
+    vlans:
+      - id: 677
+      - id: 58
+      - id: 670
+      # etc
+  nodes:
+    - name: bond-ips
+      node: master-0
+      vlans:
+        - id: 672
+          ip: 192.168.1.1
+
+# LDAP configuration.
+# Used in:
+#  - ldap-accounts.yaml
+#  - ldap-bind-secret.yaml
+#  - ldap-oauth-provider.yaml
+ldap:
+#  # The name of the LDAPSyncConfig (ldap-accounts.yaml)
+#  syncConfigName: foo
+#  accountName: sAMAccountName
+#  bindDN: # like some.svc.ocp
+#  bindPW: foo # plaintext password to access LDAP server
+#  server:
+#    name: # like NAME LDAP
+#    urlFull: # like: ldap://fdqn/dn?accountName
+#    urlShort: # like: ldap://fdqn
+#  groupUIDNameMapping: '"cn=foo,ou=bar": foo' # Like "cn=foo,ou=bar...": bar
+#  queries:
+#    group:
+#      baseDN: # Like "cn=foo,ou=bar..."
+#    user:
+#      baseDN: # Like "cn=foo,ou=bar..."
+#      filter: # Like "(cn=foo,ou=bar...)"
+
+# Chrony configuration.
+# The chrony configuration defined in configContent is applied to all OCP nodes with each of the roles specified.
+# Used in:
+#  - chrony-configuration.yaml
+chrony:
+  roles:
+    - role: master
+    - role: worker
+  configContent: |-
+    # EXAMPLE chrony config
+    server pool.ntp.org iburst
+    driftfile /var/lib/chrony/drift
+    makestep 10 3
+    rtcsync
+
+# Storage settings for the cluster.
+# Used in trident-sc.yaml, trident-nad.yaml
+storage:
+  # The location of the trident/netapp host
+  provisioner: csi.trident.netapp.io
+  nad:
+    mgmtAddress: "192.168.1.10/24"
+    masterBond: "bond0.672"
 
