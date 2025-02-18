@@ -1,3 +1,5 @@
+# THIS REPO IS ARCHIVED. Further dev will happen on forks of this repo.
+
 ![](docs/images/Red_Hat_Logo_2019.png "Red Hat Logo")
 
 # Openshift 4 Disconnected Collection
