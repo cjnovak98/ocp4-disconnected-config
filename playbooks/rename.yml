@@ -1,0 +1,9 @@
+#!/usr/bin/ansible-playbook -K
+- hosts: localhost
+  gather_facts: true
+  roles:
+    - role: ocp4.disconnected.common
+    - role: ocp4.disconnected.monitor_deployment
+      vars:
+      #   helm_options: "--dry-run=client"
+        common_openshift_cluster_install_dir: "/home/sdill/install-2024-12-02"

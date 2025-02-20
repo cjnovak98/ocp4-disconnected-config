@@ -132,3 +132,14 @@ storage:
     mgmtAddress: "192.168.1.10/24"
     masterBond: "bond0.672"
 
+  #set up job that runs tridentctl commands
+  namespace: trident
+  imageRegistry: 1.1.1.1:5000/sig-storage #changeme
+  autosupportImage: netapp/trident-autosupport:24.06
+  tridentImage: netapp/trident:24.06.0
+  configContainerImage: "ubi8/ubi:latest"
+  configContainerName: tridentctl
+  managementLIF: 1.1.1.1 #changeme
+  dataLIF: 1.1.1.1 #changme 
+  username: openshift
+  password: changeme

@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: trident-config-
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ .Values.storage.configContainerName }}
+        image: {{ .Values.storage.configContainerImage }}
+        command: [ "sh", "-c" ]
+        args:
+        - |
+          # Check if required tools are installed and install them if missing
+          if ! command -v kubectl >/dev/null 2>&1; then
+            echo "Installing kubectl..."
+            curl -LO "https://dl.k8s.io/release/v1.31.3/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            mv kubectl /usr/local/bin/
+          fi
+          if ! command -v tridentctl >/dev/null 2>&1; then
+            echo "Installing tridentctl..."
+            curl -LO "https://github.com/NetApp/trident/releases/download/v24.10.0/trident-installer-24.10.0.tar.gz"
+            tar -xf trident-installer-24.10.0.tar.gz
+            chmod +x trident-installer/tridentctl
+            mv trident-installer/tridentctl /usr/local/bin/
+          fi
+          if ! command -v oc >/dev/null 2>&1; then
+            echo "Installing oc..."
+            curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
+            tar -xzf openshift-client-linux.tar.gz
+            chmod +x oc
+            mv oc /usr/local/bin/
+          fi
+
+          # Create backend configuration JSON file
+          echo '{"version": 1, "storageDriverName": "ontap-nas", "backendName": "ontap-nas-backend", "managementLIF": "{{ .Values.storage.managementLIF }}", "dataLIF": "{{ .Values.storage.dataLIF }}", "svm": "nfssvm", "username": "{{ .Values.storage.username }}", "password": "{{ .Values.storage.password }}"}' | jq . > backend.json
+          
+          # Install and configure Trident
+          tridentctl install \
+            --namespace {{ .Values.storage.namespace }} \
+            --image-registry {{ .Values.storage.imageRegistry }} \
+            --autosupport-image {{ .Values.storage.autosupportImage }} \
+            --trident-image {{ .Values.storage.tridentImage }}
+          
+          tridentctl create backend \
+            --namespace trident \
+            -f "backend.json"
+      restartPolicy: Never
+  backoffLimit: 2
