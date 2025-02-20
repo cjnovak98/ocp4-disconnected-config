@@ -1,0 +1,215 @@
+---
+
+
+########    REQUIRED VARIABLES    ########
+
+
+common_ip_space: 192.168.122
+common_nodes:
+  - name: master-0
+    ip: '42'
+    mac: 52:54:00:8d:13:77
+  - name: worker-0
+    ip: '43'
+    mac: 52:54:00:8d:13:78
+
+trident_backend_config: |-
+  {
+    "version": 1,
+    "storageDriverName": "ontap-nas",
+    "backendName": "ontap-nas-backend",
+    "managementLIF": "192.168.8.4",
+    "dataLIF": "192.168.8.3",
+    "svm": "nfssvm",
+    "username": "openshift",
+    "password": "changeme"
+  }
+#########################################
+
+
+########    DEFAULT  VARIABLES    #######
+
+
+common_git_repos:
+  - "https://github.com/cjnovak98/ocp4-disconnected-collection.git"
+  - "https://github.com/cjnovak98/ocp4-disconnected-config"
+
+#common_install_dir: "/home/your_user_dir" ## This can also be set to any root directory you'd like. It just needs permissions.
+common_openshift_dir: /pods/content
+common_connected_cluster: false
+mirror_content_pull_mirror: false
+
+#worker_iso_disk_type: sda
+#agent_iso_cluster_name: ocp-sno
+common_openshift_interface: eno1
+common_fips_enabled: true
+common_cluster_domain: example.com
+
+
+# Registry
+#common_registry_volume: /pods/registry
+#registry_username: openshift
+#registry_password: CHANGEME
+
+
+# iDRAC
+#idrac: false
+#idrac_user: test
+#idrac_password: tester
+
+media_share_idracs:
+  - name: master-0
+    ip: '{{ ip_space }}.5'
+  - name: worker-0
+    ip: '{{ ip_space }}.8'
+
+# Single Node Worker
+# Generate agent
+
+common_openshift_release: 4.16.4
+common_previous_openshift_release: 4.16.3
+common_trident_version: v24.06.0
+
+
+# Disconnected Images
+
+#content_generation_pull_mirror: true
+
+## Operators To be mirrored, based on index they are in
+content_generation_disconnected_operators:
+  - redhat-operator-index:
+    - name: kubernetes-nmstate-operator
+    - name: kubevirt-hyperconverged
+    - name: mtv-operator
+    - name: openshift-gitops-operator
+  - redhat-marketplace-index:
+  - community-operator-index:
+  - certified-operator-index:
+
+## additionalImages for oc-mirror to pull. Include version
+content_generation_additionalImages:
+  - name: registry.redhat.io/ubi8/ubi:latest
+  - name: registry.redhat.io/ubi9/ubi:latest
+  - name: quay.io/noseka1/toolbox-container:full
+  - name: netapp/trident:24.06.0                                        
+  - name: docker.io/netapp/trident-autosupport:24.06                    
+  - name: registry.k8s.io/sig-storage/csi-provisioner:v4.0.1            
+  - name: registry.k8s.io/sig-storage/csi-attacher:v4.6.0               
+  - name: registry.k8s.io/sig-storage/csi-resizer:v1.11.0               
+  - name: registry.k8s.io/sig-storage/csi-snapshotter:v7.0.2            
+  - name: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.0 
+  - name: netapp/trident-operator:24.06.0 
+
+
+
+#### ARCHIVED (?)
+
+gitOps:
+  namespace: openshift-gitops
+#  source: redhat-operators
+  source: cs-redhat-operator-index-v4-16
+
+gitRepoTemplate:
+  # The URL of the repository setup in the Ansible step.
+  url: git@<ip of host>:repos/ocp4-disconnected-config
+  # The SSH key of the user that ran the Ansible step, used to connect to the git repo
+  sshPrivateKey: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    -----END OPENSSH PRIVATE KEY-----
+# General cluster-level information
+cluster:
+  # Used in the proxy to specify the certs to use there.
+  # Used in proxy-custom-ca-cm.yaml in turn used by proxy.yaml
+  ca:
+#    # true if you have a cert and want to set it, false to skip setting a cluster ca.
+mtv:
+  enabled: true
+  catalog_source: cs-redhat-operator-index-v4-16
+  target_namespace: openshift-mtv
+  controller_max_vm_inflight: 20
+  # these values will need to be replaced by actual vcenter info in order to pull over VMs from that source
+  provider:
+    name: mtv-provider
+    secret: mtv-secret
+    url: https://mtv-url/sdk
+    endpoint: mtv-endpoint
+    init_image: mtv-registry/init/image:1
+
+namespace:
+  - ns: openshift-mtv
+  - ns: openshift-nmstate
+  
+nmstate:
+  enabled: true
+  catalog_source: cs-redhat-operator-index-v4-16
+  target_namespace: openshift-nmstate
+
+nncps:
+  bond:
+    name: bond0
+    bond:
+      ports:
+        - ens2f0
+        - ens2f1
+        - ens3f0  
+        - ens3f1
+        # etc
+    vlans:
+      - id: 677
+      - id: 58
+      - id: 670
+      # etc
+  nodes:
+    - name: bond-ips
+      node: master-0
+      vlans:
+        - id: 672
+          ip: 192.168.1.1
+
+# LDAP configuration.
+# Used in:
+#  - ldap-accounts.yaml
+#  - ldap-bind-secret.yaml
+#  - ldap-oauth-provider.yaml
+ldap:
+#  # The name of the LDAPSyncConfig (ldap-accounts.yaml)
+#  syncConfigName: foo
+#  accountName: sAMAccountName
+#  bindDN: # like some.svc.ocp
+#  bindPW: foo # plaintext password to access LDAP server
+#  server:
+#    name: # like NAME LDAP
+#    urlFull: # like: ldap://fdqn/dn?accountName
+#    urlShort: # like: ldap://fdqn
+#  groupUIDNameMapping: '"cn=foo,ou=bar": foo' # Like "cn=foo,ou=bar...": bar
+#  queries:
+#    group:
+#      baseDN: # Like "cn=foo,ou=bar..."
+#    user:
+#      baseDN: # Like "cn=foo,ou=bar..."
+#      filter: # Like "(cn=foo,ou=bar...)"
+
+# Chrony configuration.
+# The chrony configuration defined in configContent is applied to all OCP nodes with each of the roles specified.
+# Used in:
+#  - chrony-configuration.yaml
+chrony:
+  roles:
+    - role: master
+    - role: worker
+  configContent: |-
+    # EXAMPLE chrony config
+    server pool.ntp.org iburst
+    driftfile /var/lib/chrony/drift
+    makestep 10 3
+    rtcsync
+
+# Storage settings for the cluster.
+# Used in trident-sc.yaml, trident-nad.yaml
+storage:
+  # The location of the trident/netapp host
+  provisioner: csi.trident.netapp.io
+  nad:
+    mgmtAddress: "192.168.1.10/24"
+    masterBond: "bond0.672"
+
